@@ -3,7 +3,6 @@ package proxy
 import (
 	"errors"
 	"hash/fnv"
-	"loong/pkg/object/trafficgate"
 	"math/rand"
 	"sync"
 	"sync/atomic"
@@ -36,12 +35,12 @@ type Balancer interface {
 }
 
 // factory design pattern
-type Factory func([]trafficgate.Host) Balancer
+type Factory func([]Host) Balancer
 
 var factories = make(map[string]Factory)
 
 // generate the loadBalancer
-func BuildBalancer(algorithm string, hosts []trafficgate.Host) (Balancer, error) {
+func BuildBalancer(algorithm string, hosts []Host) (Balancer, error) {
 	factory, ok := factories[algorithm]
 	if !ok {
 		return nil, ErrAlgorithmSupported
@@ -52,7 +51,7 @@ func BuildBalancer(algorithm string, hosts []trafficgate.Host) (Balancer, error)
 // basic Balancer
 type BaseBalancer struct {
 	sync.RWMutex
-	Hosts []trafficgate.Host
+	Hosts []Host
 
 	// storage delete host information
 	// easy to call add/remove methods
@@ -60,7 +59,7 @@ type BaseBalancer struct {
 	delHosts map[string]int64
 }
 
-func NewBaseBalancer(hosts []trafficgate.Host) Balancer {
+func NewBaseBalancer(hosts []Host) Balancer {
 	return &BaseBalancer{Hosts: hosts}
 }
 
@@ -74,7 +73,7 @@ func (b *BaseBalancer) Add(nHost string) {
 			return
 		}
 	}
-	b.Hosts = append(b.Hosts, trafficgate.Host{
+	b.Hosts = append(b.Hosts, Host{
 		Url:    nHost,
 		Weight: b.delHosts[nHost],
 	})
@@ -109,7 +108,7 @@ type LoadBalancePolicyRandom struct {
 	rnd *rand.Rand
 }
 
-func NewLbpRandom(hosts []trafficgate.Host) Balancer {
+func NewLbpRandom(hosts []Host) Balancer {
 	return &LoadBalancePolicyRandom{
 		BaseBalancer: BaseBalancer{
 			Hosts: hosts,
@@ -133,7 +132,7 @@ type LoadBalancePolicyRoundRobin struct {
 	cnt atomic.Uint64
 }
 
-func NewLbpRoundRobin(hosts []trafficgate.Host) Balancer {
+func NewLbpRoundRobin(hosts []Host) Balancer {
 	return &LoadBalancePolicyRoundRobin{
 		BaseBalancer: BaseBalancer{
 			Hosts: hosts,
@@ -158,7 +157,7 @@ type LoadBalancePolicyWeightRoundRobin struct {
 	rnd         *rand.Rand
 }
 
-func NewLbpWeightRoundRobin(hosts []trafficgate.Host) Balancer {
+func NewLbpWeightRoundRobin(hosts []Host) Balancer {
 	// calculate the sum of weight of hosts
 	var totalWeight int64
 	for _, host := range hosts {
@@ -188,7 +187,7 @@ type LoadBalancePolicyIPHash struct {
 	BaseBalancer
 }
 
-func NewLbpIPHash(hosts []trafficgate.Host) Balancer {
+func NewLbpIPHash(hosts []Host) Balancer {
 	return &LoadBalancePolicyIPHash{
 		BaseBalancer: BaseBalancer{
 			Hosts: hosts,

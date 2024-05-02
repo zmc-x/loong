@@ -2,6 +2,7 @@ package trafficgate
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -12,7 +13,12 @@ type Server struct {
 	shutdownTimeOut time.Duration
 }
 
-func NewServer(cfg Config) *Server {
+func NewServer(rawCfg any) (*Server, error) {
+	cfg := Config{}
+	err := json.Unmarshal(rawCfg.([]byte), &cfg)
+	if err != nil {
+		return nil, err
+	}
 	return &Server{
 		server: &http.Server{
 			Addr: fmt.Sprintf(":%d", cfg.Port),
@@ -22,7 +28,7 @@ func NewServer(cfg Config) *Server {
 			Handler: http.NewServeMux(),
 		},
 		shutdownTimeOut: 10 * time.Second,
-	}
+	}, nil
 }
 
 func (s *Server) RegisterHandler(path string, handler http.Handler) {

@@ -1,26 +1,17 @@
 package trafficgate
 
+import "loong/pkg/supervisor"
+
 // HTTPServer path configuration
 type Spec struct {
-	Path        string `yaml:"path"`
-	Pool        []Host `yaml:"pool"`
-	LoadBalance `yaml:"loadBalance,omitempty"`
+	Path        string `json:"path"`
+	// pipeline name
+	Backend     string `json:"backend"`
 }
 
-type Host struct {
-	Url string `yaml:"url"`
-	// the field can be used to implement
-	// a load balancing algorithm weight round-robin
-	Weight int64 `yaml:"weight,omitempty"`
-}
-
-type LoadBalance struct {
-	Policy string `yaml:"policy"`
-}
 
 type Config struct {
-	Name  string `yaml:"name"`
-	Kind  string `yaml:"kind"`
-	Port  uint64 `yaml:"port"`
-	Paths []Spec `yaml:"paths"`
+	supervisor.Meta `json:",inline"`
+	Port  uint64 `json:"port"`
+	Paths []Spec `json:"paths"`
 }

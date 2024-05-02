@@ -1,15 +1,35 @@
 package controller
 
 import (
-	"loong/pkg/object/trafficgate"
+	"encoding/json"
+	"errors"
 	"os"
+	"path/filepath"
 
 	"gopkg.in/yaml.v3"
 )
 
-func ReadFromYaml() (trafficgate.Config, error) {
-	cfg := trafficgate.Config{}
-	f, err := os.Open("/home/hellozmc/code/goproject/src/loong/temp/trafficgate/server.yml")
+
+const (
+	DirPath = "/home/hellozmc/code/goproject/src/loong/temp"
+	pipeline = "pipeline/pipeline.yml"
+	server = "trafficgate/server.yml"
+)
+
+var ErrNoModel = errors.New("no this model")
+
+func ReadFromYaml(key string) (any, error) {
+	var cfg any
+	var path string 
+	switch key {
+	case "pipeline":
+		path = filepath.Join(DirPath, pipeline)
+	case "trafficGate":
+		path = filepath.Join(DirPath, server)
+	default:
+		return nil, ErrNoModel
+	}
+	f, err := os.Open(path)
 	if err != nil {
 		return cfg, err
 	}
@@ -18,6 +38,7 @@ func ReadFromYaml() (trafficgate.Config, error) {
 	if err != nil {
 		return cfg, err 
 	}
-	return cfg, nil
+	// convert to json format
+	return json.Marshal(cfg)
 }
 
