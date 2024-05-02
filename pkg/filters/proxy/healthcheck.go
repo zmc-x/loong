@@ -25,6 +25,5 @@ func (p *HTTPProxy) healthCheck(host string, interval uint64) {
 			p.alive[host] = false
 			p.lb.Remove(host)
 		}
-	} 
+	}
 }
-

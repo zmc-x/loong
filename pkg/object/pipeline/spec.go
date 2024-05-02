@@ -8,10 +8,12 @@ import (
 	"net/http"
 )
 
-var filters map[string]filter.Filter = make(map[string]filter.Filter)
-
 var (
-	ErrNoConfig = errors.New("no this configuration file")
+	PipelineMap map[string]*Spec = make(map[string]*Spec)
+	// filters represent mappings between filters and corresponding modules in a pipeline.
+	// key: pipeline:filter value: Filter
+	filters     map[string]filter.Filter = make(map[string]filter.Filter)
+	ErrNoConfig                          = errors.New("no this configuration file")
 )
 
 type Spec struct {
@@ -31,7 +33,7 @@ type filterNode struct {
 func (s *Spec) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Execute the handle in sequence
 	for _, flow := range s.Flow {
-		filterInstance := filters[flow.Filter]
+		filterInstance := filters[s.Name+":"+flow.Filter]
 		filterInstance.Handle(w, r)
 	}
 }
@@ -51,9 +53,11 @@ func InitPipeline(cfg any) (*Spec, error) {
 		if err != nil {
 			return nil, err
 		}
-		filters[node.Filter] = filter.Create(filterSpec)
-		filters[node.Filter].Init()
+		key := spec.Name + ":" + node.Filter
+		filters[key] = filter.Create(filterSpec)
+		filters[key].Init()
 	}
+	PipelineMap[spec.Name] = &spec
 	return &spec, nil
 }
 

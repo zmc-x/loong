@@ -33,7 +33,7 @@ func ResetKinds(name string) {
 
 // Filter is common interface of filter
 type Filter interface {
-	// init this filter 
+	// init this filter
 	Init() error
 	// Handle is handle logic
 	Handle(http.ResponseWriter, *http.Request)

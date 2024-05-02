@@ -45,7 +45,7 @@ func TestInitPipeline(t *testing.T) {
 	flows := []string{"proxy-demo"}
 	for _, flow := range flows {
 		assert.NotNil(filters[flow], "no success")
-	} 
+	}
 }
 
 func TestSplitConfig(t *testing.T) {

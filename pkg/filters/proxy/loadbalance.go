@@ -102,7 +102,6 @@ func (b *BaseBalancer) Balance(key string) (string, error) {
 	return b.Hosts[0].Url, nil
 }
 
-
 type LoadBalancePolicyRandom struct {
 	BaseBalancer
 	rnd *rand.Rand

@@ -9,25 +9,27 @@ import (
 )
 
 type Server struct {
-	server *http.Server
+	spec            *Spec
+	server          *http.Server
 	shutdownTimeOut time.Duration
 }
 
 func NewServer(rawCfg any) (*Server, error) {
-	cfg := Config{}
-	err := json.Unmarshal(rawCfg.([]byte), &cfg)
+	spec := &Spec{}
+	err := json.Unmarshal(rawCfg.([]byte), spec)
 	if err != nil {
 		return nil, err
 	}
 	return &Server{
 		server: &http.Server{
-			Addr: fmt.Sprintf(":%d", cfg.Port),
-			ReadTimeout: 5 * time.Second,
+			Addr:         fmt.Sprintf(":%d", spec.Port),
+			ReadTimeout:  5 * time.Second,
 			WriteTimeout: 10 * time.Second,
 			IdleTimeout:  120 * time.Second,
-			Handler: http.NewServeMux(),
+			Handler:      http.NewServeMux(),
 		},
 		shutdownTimeOut: 10 * time.Second,
+		spec:            spec,
 	}, nil
 }
 
@@ -38,7 +40,7 @@ func (s *Server) RegisterHandler(path string, handler http.Handler) {
 func (s *Server) StartServer() error {
 	err := s.server.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {
-		return err 
+		return err
 	}
 	return nil
 }
@@ -47,4 +49,12 @@ func (s *Server) ShutdownServer() error {
 	ctx, cancel := context.WithTimeout(context.Background(), s.shutdownTimeOut)
 	defer cancel()
 	return s.server.Shutdown(ctx)
+}
+
+func (s *Server) GetPath() []Paths {
+	return s.spec.Paths
+}
+
+func (s *Server) GetPort() uint16 {
+	return s.spec.Port
 }

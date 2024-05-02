@@ -54,7 +54,6 @@ type HTTPProxy struct {
 	spec  *Spec
 }
 
-
 func (h *HTTPProxy) Init() error {
 	return h.newHTTPProxy()
 }
@@ -68,7 +67,7 @@ func (h *HTTPProxy) Handle(w http.ResponseWriter, r *http.Request) {
 	h.hostMap[host].ServeHTTP(w, r)
 }
 
-func (h *HTTPProxy)newHTTPProxy() error {
+func (h *HTTPProxy) newHTTPProxy() error {
 	// hosts mark all servers
 	hosts := []Host{}
 	hostMap := make(map[string]http.Handler)
@@ -80,7 +79,6 @@ func (h *HTTPProxy)newHTTPProxy() error {
 		}
 		proxy := httputil.NewSingleHostReverseProxy(url)
 		host := GetHost(url)
-
 		alive[host] = true
 		hostMap[host] = proxy
 		hosts = append(hosts, Host{
@@ -94,9 +92,7 @@ func (h *HTTPProxy)newHTTPProxy() error {
 		return err
 	}
 	h.alive = alive
-	h.lb = lb 
+	h.lb = lb
 	h.hostMap = hostMap
-	return nil 
+	return nil
 }
-
-

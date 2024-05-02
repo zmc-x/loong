@@ -7,11 +7,11 @@ import (
 )
 
 func TestReadFromYaml(t *testing.T) {
-	_, err := ReadFromYaml("server")
+	_, err := ReadFromYaml("server", "server.yml")
 	assert := assert.New(t)
 	assert.NotNil(err, "no this model")
-	_, err = ReadFromYaml("trafficGate")
+	_, err = ReadFromYaml("trafficGate", "server.yml")
 	assert.Nil(err, "successful read")
-	_, err = ReadFromYaml("pipeline")
+	_, err = ReadFromYaml("pipeline", "demo.yml")
 	assert.Nil(err, "successful read")
 }
