@@ -7,7 +7,12 @@ import (
 	"net/url"
 )
 
-const Kind = "Proxy"
+const (
+	Kind = "Proxy"
+
+	ResultInternalError = "internalError"
+	ResultServerError   = "serverError"
+)
 
 var (
 	XForwardFor = http.CanonicalHeaderKey("X-Forwarded-For")
@@ -58,13 +63,14 @@ func (h *HTTPProxy) Init() error {
 	return h.newHTTPProxy()
 }
 
-func (h *HTTPProxy) Handle(w http.ResponseWriter, r *http.Request) {
+func (h *HTTPProxy) Handle(w http.ResponseWriter, r *http.Request) (string, int) {
 	host, err := h.lb.Balance(GetClientIP(r))
 	if err != nil {
-		w.WriteHeader(http.StatusBadGateway)
-		return
+		return ResultInternalError, http.StatusBadGateway
 	}
 	h.hostMap[host].ServeHTTP(w, r)
+	// -1 indicates that the status code has been written.
+	return "", -1
 }
 
 func (h *HTTPProxy) newHTTPProxy() error {

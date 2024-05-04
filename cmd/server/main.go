@@ -22,6 +22,7 @@ import (
 
 // build the api gateway server
 func main() {
+	controller.DirPath, _ = os.Getwd()
 	global.GlobalZapLog = logger.CreateLogger()
 	defer global.GlobalZapLog.Sync()
 
@@ -35,7 +36,7 @@ func main() {
 	}
 
 
-	pipelineDir, _ := os.ReadDir(filepath.Join(controller.DirPath, "pipeline"))
+	pipelineDir, _ := os.ReadDir(filepath.Join(controller.DirPath, "temp/pipeline"))
 	for _, v := range pipelineDir {
 		pipelineCfg, err := controller.ReadFromYaml("pipeline", v.Name())
 		if err != nil {

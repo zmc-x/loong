@@ -36,7 +36,7 @@ type Filter interface {
 	// init this filter
 	Init() error
 	// Handle is handle logic
-	Handle(http.ResponseWriter, *http.Request)
+	Handle(http.ResponseWriter, *http.Request) (string, int)
 }
 
 type Kind struct {

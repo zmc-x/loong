@@ -8,6 +8,8 @@ import (
 	"net/http"
 )
 
+const PipelineEND = "END"
+
 var (
 	PipelineMap map[string]*Spec = make(map[string]*Spec)
 	// filters represent mappings between filters and corresponding modules in a pipeline.
@@ -27,14 +29,40 @@ type Spec struct {
 
 type filterNode struct {
 	Filter string `json:"filter"`
+	// This mechanism is to enable certain modules to jump
+	// to the corresponding position when they return a certain result,
+	// similar to the jmp jump instruction in assembly.
+	JumpIf map[string]string `json:"jumpIf,omitempty"`
 }
 
 // Register the pipeline with trafficgate
 func (s *Spec) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Execute the handle in sequence
-	for _, flow := range s.Flow {
+	statusCode := http.StatusOK
+	lenf := len(s.Flow)
+	for i := 0; i < lenf; i++ {
+		flow := s.Flow[i]
 		filterInstance := filters[s.Name+":"+flow.Filter]
-		filterInstance.Handle(w, r)
+		var res string
+		res, statusCode = filterInstance.Handle(w, r)
+		if flow.JumpIf != nil {
+			if v, ok := flow.JumpIf[res]; ok {
+				if v == PipelineEND {
+					break
+				} else {
+					for j := i + 1; j < lenf; j++ {
+						if v == s.Flow[j].Filter {
+							i = j - 1
+							break
+						}
+					}
+				}
+			}
+		}
+	}
+	// Not through proxy
+	if statusCode != -1 {
+		w.WriteHeader(statusCode)
 	}
 }
 
@@ -55,7 +83,10 @@ func InitPipeline(cfg any) (*Spec, error) {
 		}
 		key := spec.Name + ":" + node.Filter
 		filters[key] = filter.Create(filterSpec)
-		filters[key].Init()
+		err = filters[key].Init()
+		if err != nil {
+			return nil, err
+		}
 	}
 	PipelineMap[spec.Name] = &spec
 	return &spec, nil

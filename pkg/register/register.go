@@ -1,3 +1,7 @@
 package register
 
-import _ "loong/pkg/filters/proxy"
+import (
+	// register filters
+	_ "loong/pkg/filters/proxy"
+	_ "loong/pkg/filters/validator"
+)

@@ -10,10 +10,11 @@ import (
 )
 
 const (
-	DirPath  = "/home/hellozmc/code/goproject/src/loong/temp"
-	pipeline = "pipeline"
-	server   = "trafficgate"
+	pipeline = "temp/pipeline"
+	server   = "temp/trafficgate"
 )
+
+var DirPath string
 
 var ErrNoModel = errors.New("no this model")
 

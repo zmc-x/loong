@@ -10,14 +10,36 @@ import (
 
 var cfg = `
 {
-	"name": "pipeline-demo",
-	"kind": "pipeline",
+	"name": "pipeline-ping",
+	"kind": "Pipeline",
 	"flow": [
+	  {
+		"filter": "validator-demo",
+		"jumpIf": {
+		  "invalid": "END",
+		  "failureCode": "END"
+		}
+	  },
 	  {
 		"filter": "proxy-demo"
 	  }
 	],
 	"filters": [
+	  {
+		"name": "validator-demo",
+		"kind": "Validator",
+		"headers": {
+		  "Content-Type": {
+			"values": [
+			  "application/json"
+			]
+		  }
+		},
+		"jwt": {
+		  "algorithm": "HS256",
+		  "secret": "6d7973656372657"
+		}
+	  },
 	  {
 		"name": "proxy-demo",
 		"kind": "Proxy",
@@ -34,7 +56,7 @@ var cfg = `
 		}
 	  }
 	]
-  }
+}
 `
 
 func TestInitPipeline(t *testing.T) {
@@ -42,7 +64,7 @@ func TestInitPipeline(t *testing.T) {
 	assert := assert.New(t)
 	_, err := InitPipeline(str)
 	assert.Nil(err, "no success")
-	flows := []string{"proxy-demo"}
+	flows := []string{"pipeline-ping:proxy-demo"}
 	for _, flow := range flows {
 		assert.NotNil(filters[flow], "no success")
 	}
