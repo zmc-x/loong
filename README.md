@@ -11,7 +11,7 @@ Next planned features:
 - [ ] Implementing profile registration
 - [ ] Implementing client builds
 # usage
-If you want to try it, First create the temp directory in the project root and create the `pipeline` and `trafficgate` directories.
+If you want to try it, first create the `temp` directory in the project root and create the `pipeline` and `trafficgate` directories.
 
 Build the following file under `traffic`. (Currently, only the creation of a trafficgate is supported.)
 ```yml

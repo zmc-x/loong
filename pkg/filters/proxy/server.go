@@ -35,18 +35,18 @@ func init() {
 }
 
 type Spec struct {
-	Pool        []Host `json:"pool"`
+	Pool        []Host `json:"pool" validate:"required,dive,required"`
 	LoadBalance `json:"loadBalance,omitempty"`
 	filters.BaseSpec
 }
 
 type Host struct {
-	Url    string `json:"url"`
-	Weight int64  `json:"weight,omitempty"`
+	Url    string `json:"url" validate:"required,http_url"`
+	Weight int64  `json:"weight,omitempty" validate:"numeric"`
 }
 
 type LoadBalance struct {
-	Policy string `json:"policy,omitempty"`
+	Policy string `json:"policy,omitempty" validate:"len=0|oneof=random roundRobin weightRoundRobin ipHash"`
 }
 
 type HTTPProxy struct {

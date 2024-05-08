@@ -17,14 +17,18 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/go-playground/validator/v10"
 	"go.uber.org/zap"
 )
 
 // build the api gateway server
 func main() {
 	controller.DirPath, _ = os.Getwd()
+	// init global variable
 	global.GlobalZapLog = logger.CreateLogger()
 	defer global.GlobalZapLog.Sync()
+
+	global.GlobalValidator = validator.New(validator.WithRequiredStructEnabled())
 
 	serverCfg, err := controller.ReadFromYaml("trafficGate", "server.yml")
 	if err != nil {
@@ -51,6 +55,7 @@ func main() {
 	for _, path := range s.GetPath() {
 		s.RegisterHandler(path.Path, pipeline.PipelineMap[path.Backend])
 	}
+	s.RegisterMiddleWare()
 	// start the server
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()

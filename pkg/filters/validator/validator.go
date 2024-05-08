@@ -29,8 +29,8 @@ func init() {
 
 type Spec struct {
 	filters.BaseSpec
-	Headers *HeaderSpec `json:"headers"`
-	JWT     *JWTSpec    `json:"jwt"`
+	Headers *HeaderSpec `json:"headers,omitempty"`
+	JWT     *JWTSpec    `json:"jwt,omitempty"`
 }
 
 type Validator struct {

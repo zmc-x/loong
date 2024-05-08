@@ -7,6 +7,7 @@ import (
 )
 
 func TestReadFromYaml(t *testing.T) {
+	DirPath = "/home/hellozmc/code/goproject/src/loong"
 	_, err := ReadFromYaml("server", "server.yml")
 	assert := assert.New(t)
 	assert.NotNil(err, "no this model")

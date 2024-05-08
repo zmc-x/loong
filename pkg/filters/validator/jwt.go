@@ -12,11 +12,11 @@ import (
 )
 
 type JWTSpec struct {
-	Algorithm string `json:"algorithm"`
+	Algorithm string `json:"algorithm" validate:"required,oneof=HS256 HS384 HS512 RS256 RS384 RS512 ES256 ES384 ES512 PS256 PS384 PS512"`
 	// The PK is hex encoding
-	PublicKey string `json:"publickey"`
+	PublicKey string `json:"publickey" validate:"len=0|hexadecimal"`
 	// The Secret is hex encoding
-	Secret string `json:"secret"`
+	Secret string `json:"secret" validate:"hexadecimal|len=0"`
 	CookieName string `json:"cookieName,omitempty"`
 }
 

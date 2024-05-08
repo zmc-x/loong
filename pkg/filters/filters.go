@@ -3,6 +3,7 @@ package filters
 import (
 	"encoding/json"
 	"errors"
+	"loong/pkg/global"
 	"loong/pkg/supervisor"
 	"net/http"
 )
@@ -75,7 +76,11 @@ func NewSpec(pipelineName, rawCfg string) (Spec, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	// Check whether the configuration is valid
+	err = global.GlobalValidator.Struct(spec)
+	if err != nil {
+		return nil, err
+	}
 	bs := spec.baseSpec()
 	bs.pipeline = pipelineName
 	bs.Meta = meta
