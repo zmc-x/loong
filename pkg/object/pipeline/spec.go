@@ -3,6 +3,7 @@ package pipeline
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	filter "loong/pkg/filters"
 	"loong/pkg/supervisor"
 	"net/http"
@@ -11,6 +12,8 @@ import (
 const PipelineEND = "END"
 
 var (
+	// surMap check whether there is a duplicate pipeline
+	surMap map[string]bool = make(map[string]bool)
 	PipelineMap map[string]*Spec = make(map[string]*Spec)
 	// filters represent mappings between filters and corresponding modules in a pipeline.
 	// key: pipeline:filter value: Filter
@@ -72,6 +75,11 @@ func InitPipeline(cfg any) (*Spec, error) {
 	if err := json.Unmarshal(cfg.([]byte), &spec); err != nil {
 		return nil, err
 	}
+	// Check whether there are configurations with duplicate names
+	if surMap[spec.Name] {
+		return nil, fmt.Errorf("the pipeline of name %s already existes", spec.Name)
+	}
+	surMap[spec.Name] = true
 	for _, node := range spec.Flow {
 		nodeCfg, err := splitCfg(node.Filter, &spec)
 		if err != nil {
@@ -104,4 +112,12 @@ func splitCfg(name string, rawCfg *Spec) (string, error) {
 		}
 	}
 	return "", ErrNoConfig
+}
+
+// this function can reset some variables
+// prevents errors during reloading
+func Reset() {
+	surMap = make(map[string]bool)
+	PipelineMap = make(map[string]*Spec)
+	filters = make(map[string]filter.Filter)
 }

@@ -1,0 +1,107 @@
+package cmd
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
+
+	"loong/pkg/controller"
+	"loong/pkg/global"
+	"loong/pkg/object/pipeline"
+	"loong/pkg/object/trafficgate"
+	"net/http"
+	"os/signal"
+	"syscall"
+
+	"go.uber.org/zap"
+)
+
+var cancel context.CancelFunc
+
+
+// ReloadConfig function can reloads the configurations
+func ReloadConfig() {
+	resetConfig()
+	startoongApiGateway()
+}
+
+// resetConfig function can reset all configuration of loong
+func resetConfig() {
+	trafficgate.Reset()
+	pipeline.Reset()
+	if cancel != nil {
+		cancel()
+	}
+}
+
+
+// build the api gateway server
+func startoongApiGateway() {
+	// read the trafficGate configuration file
+	trafficDir, _ := os.ReadDir(filepath.Join(controller.DirPath, "temp/trafficgate"))
+	for _, v := range trafficDir {
+		trafficCfg, err := controller.ReadFromYaml("trafficGate", v.Name())
+		if err != nil {
+			global.GlobalZapLog.Error("failed to read config", zap.String("error", err.Error()))
+			continue
+		}
+		_, err = trafficgate.NewServer(trafficCfg)
+		if err != nil {
+			global.GlobalZapLog.Error("failed to new TrafficGate", zap.String("error", err.Error()))
+			continue
+		}
+	}
+
+	// read the pipeline configuration file
+	pipelineDir, _ := os.ReadDir(filepath.Join(controller.DirPath, "temp/pipeline"))
+	for _, v := range pipelineDir {
+		pipelineCfg, err := controller.ReadFromYaml("pipeline", v.Name())
+		if err != nil {
+			global.GlobalZapLog.Error("failed to read config", zap.String("error", err.Error()))
+			continue
+		}
+		_, err = pipeline.InitPipeline(pipelineCfg)
+		if err != nil {
+			global.GlobalZapLog.Error("failed to new Pipeline", zap.String("error", err.Error()))
+			continue
+		}
+	}
+
+	var ctx context.Context
+	// start the server
+	ctx, cancel = signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer cancel()
+
+	// register handle
+	for _, server := range trafficgate.Servers {
+		for _, path := range server.GetPath() {
+			server.RegisterHandler(path.Path, pipeline.PipelineMap[path.Backend])
+		}
+		server.RegisterMiddleWare()
+		go runServer(server)
+	}
+
+	// wait for the shutdown signal and stop the server
+	<-ctx.Done()
+
+	for _, server := range trafficgate.Servers {
+		err := server.ShutdownServer()
+		if err != nil {
+			global.GlobalZapLog.Fatal("failed to shutdown server", zap.String("error", err.Error()))
+		}
+	}
+	global.GlobalZapLog.Info("server stopped")
+}
+
+func runServer(server *trafficgate.Server) {
+	global.GlobalZapLog.Info("server " + server.GetName() + " is starting", zap.String("address", fmt.Sprintf("%d", server.GetPort())))
+	go func() {
+		err := server.StartServer()
+		if err != nil && errors.Is(err, http.ErrServerClosed) {
+			global.GlobalZapLog.Error("failed to start server", zap.String("error", err.Error()))
+			return 
+		}
+	}()
+}

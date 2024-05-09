@@ -24,11 +24,15 @@ func NewServer(rawCfg any) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
+	if surMap[spec.Name] {
+		return nil, fmt.Errorf("the trafficGate of name %s already exists", spec.Name)
+	}
+	surMap[spec.Name] = true
 	err = global.GlobalValidator.Struct(spec)
 	if err != nil {
 		return nil, err
 	}
-	return &Server{
+	server := &Server{
 		server: &http.Server{
 			Addr:         fmt.Sprintf(":%d", spec.Port),
 			ReadTimeout:  5 * time.Second,
@@ -38,7 +42,9 @@ func NewServer(rawCfg any) (*Server, error) {
 		},
 		shutdownTimeOut: 10 * time.Second,
 		spec:            spec,
-	}, nil
+	}
+	Servers = append(Servers, server)
+	return server, nil
 }
 
 func (s *Server) RegisterHandler(path string, handler http.Handler) {
@@ -69,6 +75,10 @@ func (s *Server) GetPath() []Paths {
 
 func (s *Server) GetPort() uint16 {
 	return s.spec.Port
+}
+
+func (s *Server) GetName() string {
+	return s.spec.Name
 }
 
 func (s *Server) interceptRequest(next http.Handler) http.Handler {
