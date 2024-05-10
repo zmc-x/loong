@@ -14,3 +14,9 @@ var (
 	// route variable
 	GlobalRouter *mux.Router
 )
+
+
+// command variable
+var (
+	Port uint64
+)

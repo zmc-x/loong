@@ -12,8 +12,6 @@ import (
 	"loong/pkg/object/pipeline"
 	"loong/pkg/object/trafficgate"
 	"net/http"
-	"os/signal"
-	"syscall"
 
 	"go.uber.org/zap"
 )
@@ -71,9 +69,7 @@ func startoongApiGateway() {
 
 	var ctx context.Context
 	// start the server
-	ctx, cancel = signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer cancel()
-
+	ctx, cancel = context.WithCancel(context.Background())
 	// register handle
 	for _, server := range trafficgate.Servers {
 		for _, path := range server.GetPath() {
@@ -89,18 +85,18 @@ func startoongApiGateway() {
 	for _, server := range trafficgate.Servers {
 		err := server.ShutdownServer()
 		if err != nil {
-			global.GlobalZapLog.Fatal("failed to shutdown server", zap.String("error", err.Error()))
+			global.GlobalZapLog.Fatal("failed to shutdown traffic server", zap.String("error", err.Error()))
 		}
 	}
-	global.GlobalZapLog.Info("server stopped")
+	global.GlobalZapLog.Info("traffic servers stopped")
 }
 
 func runServer(server *trafficgate.Server) {
-	global.GlobalZapLog.Info("server " + server.GetName() + " is starting", zap.String("address", fmt.Sprintf("%d", server.GetPort())))
+	global.GlobalZapLog.Info("traffic server " + server.GetName() + " is starting", zap.String("address", fmt.Sprintf("%d", server.GetPort())))
 	go func() {
 		err := server.StartServer()
 		if err != nil && errors.Is(err, http.ErrServerClosed) {
-			global.GlobalZapLog.Error("failed to start server", zap.String("error", err.Error()))
+			global.GlobalZapLog.Error("failed to start traffic server", zap.String("error", err.Error()))
 			return 
 		}
 	}()

@@ -1,4 +1,4 @@
-all: server
+all: server client
 
 client:
 	go build -o ./bin/client ./cmd/client
