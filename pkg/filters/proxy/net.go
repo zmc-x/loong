@@ -8,7 +8,11 @@ import (
 	"time"
 )
 
-const ConnectTimeOut = 3 * time.Second
+const (
+	ConnectTimeOut = 3 * time.Second
+	// defaultHealthCheckInterval
+	DefaultInterval = 5
+)
 
 // GetHost function return url.Host
 func GetHost(url *url.URL) string {

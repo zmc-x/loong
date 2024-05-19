@@ -38,6 +38,8 @@ type Filter interface {
 	Init() error
 	// Handle is handle logic
 	Handle(http.ResponseWriter, *http.Request) (string, int)
+	// Close is close this filter
+	Close() error
 }
 
 type Kind struct {

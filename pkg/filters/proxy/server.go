@@ -37,12 +37,13 @@ func init() {
 type Spec struct {
 	Pool        []Host `json:"pool" validate:"required,dive,required"`
 	LoadBalance `json:"loadBalance,omitempty"`
+	HealthCheckInterval uint32 `json:"healthCheckInterval,omitempty" validate:"numeric,gte=0,lt=4294967296"`
 	filters.BaseSpec
 }
 
 type Host struct {
 	Url    string `json:"url" validate:"required,http_url"`
-	Weight int64  `json:"weight,omitempty" validate:"numeric"`
+	Weight uint64  `json:"weight,omitempty" validate:"numeric"`
 }
 
 type LoadBalance struct {
@@ -56,6 +57,8 @@ type HTTPProxy struct {
 	lb      Balancer
 	// alive mark host health status
 	alive map[string]bool
+	// done channel is used to notify the end of the service 
+	done chan struct{}
 	spec  *Spec
 }
 
@@ -71,6 +74,11 @@ func (h *HTTPProxy) Handle(w http.ResponseWriter, r *http.Request) (string, int)
 	h.hostMap[host].ServeHTTP(w, r)
 	// -1 indicates that the status code has been written.
 	return "", -1
+}
+
+func (h *HTTPProxy) Close() error {
+	h.done <- struct{}{}
+	return nil
 }
 
 func (h *HTTPProxy) newHTTPProxy() error {
@@ -100,5 +108,12 @@ func (h *HTTPProxy) newHTTPProxy() error {
 	h.alive = alive
 	h.lb = lb
 	h.hostMap = hostMap
+	h.done = make(chan struct{})
+
+	// start healthCheck process
+	if h.spec.HealthCheckInterval == 0 {
+		h.spec.HealthCheckInterval = DefaultInterval
+	}
+	h.HealthCheck()
 	return nil
 }

@@ -26,11 +26,13 @@ func main() {
 			log.Fatal("your inputed port is invalid!")
 		}
 		u, err := url.Parse(host)
-		if err != nil || u.Scheme != "http" && u.Scheme != "https" || u.Host == "" {
+		if err != nil || u.Scheme != "http" && u.Scheme != "https" || u.Host == "" || u.Port() != "" {
 			log.Fatal("your inputed host is invalid!")
 		}
-
-		req, err := http.NewRequest(http.MethodPatch, u.String() + fmt.Sprintf(":%d", port), nil)
+		
+		u = u.JoinPath("configurations")
+		u.Host += fmt.Sprintf(":%d", port)
+		req, err := http.NewRequest(http.MethodPatch, u.String(), nil)
 		if err != nil {
 			log.Fatal(err)
 		}

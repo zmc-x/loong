@@ -56,11 +56,14 @@ type BaseBalancer struct {
 	// storage delete host information
 	// easy to call add/remove methods
 	// key: hostName, value: weight
-	delHosts map[string]int64
+	delHosts map[string]uint64
 }
 
 func NewBaseBalancer(hosts []Host) Balancer {
-	return &BaseBalancer{Hosts: hosts}
+	return &BaseBalancer{
+		Hosts: hosts,
+		delHosts: make(map[string]uint64),
+	}
 }
 
 // this method add host to Hosts
@@ -111,6 +114,7 @@ func NewLbpRandom(hosts []Host) Balancer {
 	return &LoadBalancePolicyRandom{
 		BaseBalancer: BaseBalancer{
 			Hosts: hosts,
+			delHosts: make(map[string]uint64),
 		},
 		rnd: rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
@@ -135,6 +139,7 @@ func NewLbpRoundRobin(hosts []Host) Balancer {
 	return &LoadBalancePolicyRoundRobin{
 		BaseBalancer: BaseBalancer{
 			Hosts: hosts,
+			delHosts: make(map[string]uint64),
 		},
 		cnt: atomic.Uint64{},
 	}
@@ -152,19 +157,20 @@ func (lbp *LoadBalancePolicyRoundRobin) Balance(_ string) (string, error) {
 
 type LoadBalancePolicyWeightRoundRobin struct {
 	BaseBalancer
-	totalWeight int64
+	totalWeight uint64
 	rnd         *rand.Rand
 }
 
 func NewLbpWeightRoundRobin(hosts []Host) Balancer {
 	// calculate the sum of weight of hosts
-	var totalWeight int64
+	var totalWeight uint64
 	for _, host := range hosts {
 		totalWeight += host.Weight
 	}
 	return &LoadBalancePolicyWeightRoundRobin{
 		BaseBalancer: BaseBalancer{
 			Hosts: hosts,
+			delHosts: make(map[string]uint64),
 		},
 		totalWeight: totalWeight,
 		rnd:         rand.New(rand.NewSource(time.Now().UnixNano())),
@@ -172,10 +178,14 @@ func NewLbpWeightRoundRobin(hosts []Host) Balancer {
 }
 
 func (lbp *LoadBalancePolicyWeightRoundRobin) Balance(_ string) (string, error) {
-	w := lbp.rnd.Int63n(lbp.totalWeight)
+	randWeight := lbp.rnd.Uint64()
+	randWeight %= lbp.totalWeight
+	randWeight++
+	var w uint64
 	for _, host := range lbp.Hosts {
-		w -= host.Weight
-		if w < 0 {
+		w += host.Weight
+		// choose the server
+		if w >= randWeight {
 			return host.Url, nil
 		}
 	}
@@ -190,6 +200,7 @@ func NewLbpIPHash(hosts []Host) Balancer {
 	return &LoadBalancePolicyIPHash{
 		BaseBalancer: BaseBalancer{
 			Hosts: hosts,
+			delHosts: make(map[string]uint64),
 		},
 	}
 }

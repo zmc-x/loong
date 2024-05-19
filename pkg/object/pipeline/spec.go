@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	filter "loong/pkg/filters"
+	"loong/pkg/global"
 	"loong/pkg/supervisor"
 	"net/http"
 )
@@ -12,13 +13,11 @@ import (
 const PipelineEND = "END"
 
 var (
-	// surMap check whether there is a duplicate pipeline
-	surMap map[string]bool = make(map[string]bool)
 	PipelineMap map[string]*Spec = make(map[string]*Spec)
 	// filters represent mappings between filters and corresponding modules in a pipeline.
 	// key: pipeline:filter value: Filter
 	filters     map[string]filter.Filter = make(map[string]filter.Filter)
-	ErrNoConfig                          = errors.New("no this configuration file")
+	ErrNoConfig                          = errors.New("no this filter configuration file")
 )
 
 type Spec struct {
@@ -69,17 +68,28 @@ func (s *Spec) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (s *Spec) Close() {
+	lenf := len(s.Flow)
+	for i := 0; i < lenf; i++ {
+		flow := s.Flow[i]
+		filterInstance := filters[s.Name+":"+flow.Filter]
+		filterInstance.Close()
+	}
+}
+
 // create the filter
 func InitPipeline(cfg any) (*Spec, error) {
 	spec := Spec{}
 	if err := json.Unmarshal(cfg.([]byte), &spec); err != nil {
 		return nil, err
 	}
+	if err := global.GlobalValidator.Struct(spec); err != nil {
+		return nil, err
+	}
 	// Check whether there are configurations with duplicate names
-	if surMap[spec.Name] {
+	if PipelineMap[spec.Name] != nil {
 		return nil, fmt.Errorf("the pipeline of name %s already existes", spec.Name)
 	}
-	surMap[spec.Name] = true
 	for _, node := range spec.Flow {
 		nodeCfg, err := splitCfg(node.Filter, &spec)
 		if err != nil {
@@ -117,7 +127,9 @@ func splitCfg(name string, rawCfg *Spec) (string, error) {
 // this function can reset some variables
 // prevents errors during reloading
 func Reset() {
-	surMap = make(map[string]bool)
+	for _, pipeline := range PipelineMap {
+		pipeline.Close()
+	}
 	PipelineMap = make(map[string]*Spec)
 	filters = make(map[string]filter.Filter)
 }

@@ -68,3 +68,8 @@ func (v *Validator) Handle(w http.ResponseWriter, r *http.Request) (string, int)
 	}
 	return "", http.StatusOK
 }
+
+
+func (v *Validator) Close() error {
+	return nil
+}

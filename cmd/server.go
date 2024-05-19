@@ -40,6 +40,8 @@ func startoongApiGateway() {
 	// read the trafficGate configuration file
 	trafficDir, _ := os.ReadDir(filepath.Join(controller.DirPath, "temp/trafficgate"))
 	for _, v := range trafficDir {
+		fileType := filepath.Ext(v.Name())
+		if fileType != `.yaml` && fileType != `.yml` {continue}
 		trafficCfg, err := controller.ReadFromYaml("trafficGate", v.Name())
 		if err != nil {
 			global.GlobalZapLog.Error("failed to read config", zap.String("error", err.Error()))
@@ -55,6 +57,8 @@ func startoongApiGateway() {
 	// read the pipeline configuration file
 	pipelineDir, _ := os.ReadDir(filepath.Join(controller.DirPath, "temp/pipeline"))
 	for _, v := range pipelineDir {
+		fileType := filepath.Ext(v.Name())
+		if fileType != `.yaml` && fileType != `.yml` {continue}
 		pipelineCfg, err := controller.ReadFromYaml("pipeline", v.Name())
 		if err != nil {
 			global.GlobalZapLog.Error("failed to read config", zap.String("error", err.Error()))
@@ -93,11 +97,9 @@ func startoongApiGateway() {
 
 func runServer(server *trafficgate.Server) {
 	global.GlobalZapLog.Info("traffic server " + server.GetName() + " is starting", zap.String("address", fmt.Sprintf("%d", server.GetPort())))
-	go func() {
-		err := server.StartServer()
-		if err != nil && errors.Is(err, http.ErrServerClosed) {
-			global.GlobalZapLog.Error("failed to start traffic server", zap.String("error", err.Error()))
-			return 
-		}
-	}()
+	err := server.StartServer()
+	if err != nil && errors.Is(err, http.ErrServerClosed) {
+		global.GlobalZapLog.Error("failed to start traffic server", zap.String("error", err.Error()))
+		return 
+	}
 }

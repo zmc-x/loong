@@ -2,6 +2,7 @@ package trafficgate
 
 import "loong/pkg/supervisor"
 
+
 var (
 	// surMap check whether there is a duplicate trafficGate
 	surMap  map[string]bool = make(map[string]bool)
@@ -22,7 +23,7 @@ type Spec struct {
 	supervisor.Meta `json:",inline"`
 	IPFilter        `json:"ipFilter,omitempty"`
 	Port            uint16  `json:"port" validate:"min=0,max=65535,required"`
-	Paths           []Paths `json:"paths"`
+	Paths           []Paths `json:"paths" validate:"dive"`
 }
 
 type IPFilter struct {
