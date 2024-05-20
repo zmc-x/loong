@@ -65,6 +65,7 @@ func (s *Server) StartServer() error {
 
 func (s *Server) ShutdownServer() error {
 	ctx, cancel := context.WithTimeout(context.Background(), s.shutdownTimeOut)
+	// release context resource
 	defer cancel()
 	return s.server.Shutdown(ctx)
 }

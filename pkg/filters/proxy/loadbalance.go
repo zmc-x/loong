@@ -19,7 +19,7 @@ const (
 )
 
 var (
-	ErrNoHost             = errors.New("no host")
+	ErrNoHost             = errors.New("no host avaliable")
 	ErrAlgorithmSupported = errors.New("algorithm no supported")
 )
 

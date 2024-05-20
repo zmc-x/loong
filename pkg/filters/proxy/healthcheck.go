@@ -14,7 +14,7 @@ func (p *HTTPProxy) HealthCheck() {
 }
 
 func (p *HTTPProxy) healthCheck(host string) {
-	ticker := time.NewTicker(time.Second * time.Duration(p.spec.HealthCheckInterval))
+	ticker := time.NewTicker(p.interval)
 
 	for {
 		select {

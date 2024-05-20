@@ -70,6 +70,4 @@ func (v *Validator) Handle(w http.ResponseWriter, r *http.Request) (string, int)
 }
 
 
-func (v *Validator) Close() error {
-	return nil
-}
+func (v *Validator) Close() {}

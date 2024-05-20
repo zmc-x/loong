@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"loong/pkg/controller"
 	"loong/pkg/global"
@@ -16,11 +17,20 @@ import (
 	"go.uber.org/zap"
 )
 
-var cancel context.CancelFunc
+var (
+	cancel context.CancelFunc
+	// mutex to prevent data race
+	mutex sync.Mutex
+)
 
 
 // ReloadConfig function can reloads the configurations
 func ReloadConfig() {
+	if cancel != nil {
+		cancel()
+	}
+	mutex.Lock()
+	defer mutex.Unlock()
 	resetConfig()
 	startoongApiGateway()
 }
@@ -29,9 +39,6 @@ func ReloadConfig() {
 func resetConfig() {
 	trafficgate.Reset()
 	pipeline.Reset()
-	if cancel != nil {
-		cancel()
-	}
 }
 
 
@@ -78,6 +85,7 @@ func startoongApiGateway() {
 	for _, server := range trafficgate.Servers {
 		for _, path := range server.GetPath() {
 			server.RegisterHandler(path.Path, pipeline.PipelineMap[path.Backend])
+			global.GlobalZapLog.Info("the route is registered with " + server.GetName(), zap.String("route", path.Path))
 		}
 		server.RegisterMiddleWare()
 		go runServer(server)
@@ -89,7 +97,8 @@ func startoongApiGateway() {
 	for _, server := range trafficgate.Servers {
 		err := server.ShutdownServer()
 		if err != nil {
-			global.GlobalZapLog.Fatal("failed to shutdown traffic server", zap.String("error", err.Error()))
+			// https://pkg.go.dev/net/http#Server.Shutdown
+			global.GlobalZapLog.Error("failed to shutdown traffic server", zap.String("error", err.Error()))
 		}
 	}
 	global.GlobalZapLog.Info("traffic servers stopped")

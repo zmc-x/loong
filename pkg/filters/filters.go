@@ -39,7 +39,7 @@ type Filter interface {
 	// Handle is handle logic
 	Handle(http.ResponseWriter, *http.Request) (string, int)
 	// Close is close this filter
-	Close() error
+	Close()
 }
 
 type Kind struct {

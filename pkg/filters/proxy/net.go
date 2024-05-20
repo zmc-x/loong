@@ -11,7 +11,7 @@ import (
 const (
 	ConnectTimeOut = 3 * time.Second
 	// defaultHealthCheckInterval
-	DefaultInterval = 5
+	DefaultInterval = 5 * time.Second
 )
 
 // GetHost function return url.Host

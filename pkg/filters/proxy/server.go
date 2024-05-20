@@ -2,9 +2,11 @@ package proxy
 
 import (
 	"loong/pkg/filters"
+	"loong/pkg/global"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"time"
 )
 
 const (
@@ -37,7 +39,7 @@ func init() {
 type Spec struct {
 	Pool        []Host `json:"pool" validate:"required,dive,required"`
 	LoadBalance `json:"loadBalance,omitempty"`
-	HealthCheckInterval uint32 `json:"healthCheckInterval,omitempty" validate:"numeric,gte=0,lt=4294967296"`
+	HealthCheckInterval string `json:"healthCheckInterval,omitempty"`
 	filters.BaseSpec
 }
 
@@ -59,6 +61,8 @@ type HTTPProxy struct {
 	alive map[string]bool
 	// done channel is used to notify the end of the service 
 	done chan struct{}
+	// health check interval
+	interval time.Duration
 	spec  *Spec
 }
 
@@ -69,16 +73,16 @@ func (h *HTTPProxy) Init() error {
 func (h *HTTPProxy) Handle(w http.ResponseWriter, r *http.Request) (string, int) {
 	host, err := h.lb.Balance(GetClientIP(r))
 	if err != nil {
-		return ResultInternalError, http.StatusBadGateway
+		global.GlobalZapLog.Error("the back-end servers is unavaliable")
+		return ResultInternalError, http.StatusServiceUnavailable
 	}
 	h.hostMap[host].ServeHTTP(w, r)
 	// -1 indicates that the status code has been written.
 	return "", -1
 }
 
-func (h *HTTPProxy) Close() error {
+func (h *HTTPProxy) Close() {
 	h.done <- struct{}{}
-	return nil
 }
 
 func (h *HTTPProxy) newHTTPProxy() error {
@@ -109,10 +113,15 @@ func (h *HTTPProxy) newHTTPProxy() error {
 	h.lb = lb
 	h.hostMap = hostMap
 	h.done = make(chan struct{})
-
+	interval, err := time.ParseDuration(h.spec.HealthCheckInterval)
+	if err != nil {
+		return err
+	}
 	// start healthCheck process
-	if h.spec.HealthCheckInterval == 0 {
-		h.spec.HealthCheckInterval = DefaultInterval
+	if interval == 0 {
+		h.interval = DefaultInterval
+	} else {
+		h.interval = interval
 	}
 	h.HealthCheck()
 	return nil
