@@ -5,6 +5,8 @@ loong is a api gateway. This project is my graduation project. The project now h
 + Utilizing pipeline mechanisms to schedule flows 
 + Implement hot reloading
 + IP filtering
++ RateLimit
++ Mocker
 
 Next planned features(after I write my paper or after I finish it):
 - [ ] Protocol Transform
@@ -13,7 +15,7 @@ Next planned features(after I write my paper or after I finish it):
 # usage
 If you want to try it, first create the `temp` directory in the project root and create the `pipeline` and `trafficgate` directories.
 
-Build the following file under `traffic`. (Currently, only the creation of a trafficgate is supported.)
+Build the following file under `traffic`. 
 ```yml
 name: trafficGate-demo
 kind: HTTPServer
@@ -70,8 +72,8 @@ filters:
 ```
 Then you should build this project in linux. You can run the following command. (Your go version needs to be greater than 1.22)
 ```fish
-go mod tidy
-make && ./bin/server
+make
+./bin/server
 ```
 if you change your configuration, You just need to run the following command to reload the configuration.
 ```fish

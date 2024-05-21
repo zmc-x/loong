@@ -1,4 +1,4 @@
-all: server client
+all: mod server client
 
 client:
 	go build -o ./bin/client ./cmd/client
@@ -8,3 +8,6 @@ server:
 
 clean:
 	rm -rf ./bin ./logs
+
+mod:
+	go mod tidy

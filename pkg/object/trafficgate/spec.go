@@ -21,6 +21,7 @@ type Paths struct {
 
 type Spec struct {
 	supervisor.Meta `json:",inline"`
+	Disable bool `json:"disable" validate:"boolean"`
 	IPFilter        `json:"ipFilter,omitempty"`
 	Port            uint16  `json:"port" validate:"min=0,max=65535,required"`
 	Paths           []Paths `json:"paths" validate:"dive"`

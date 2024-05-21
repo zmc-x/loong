@@ -73,7 +73,7 @@ func startoongApiGateway() {
 		}
 		_, err = pipeline.InitPipeline(pipelineCfg)
 		if err != nil {
-			global.GlobalZapLog.Error("failed to new Pipeline", zap.String("error", err.Error()))
+			global.GlobalZapLog.Fatal("failed to new Pipeline", zap.String("error", err.Error()))
 			continue
 		}
 	}
@@ -85,7 +85,6 @@ func startoongApiGateway() {
 	for _, server := range trafficgate.Servers {
 		for _, path := range server.GetPath() {
 			server.RegisterHandler(path.Path, pipeline.PipelineMap[path.Backend])
-			global.GlobalZapLog.Info("the route is registered with " + server.GetName(), zap.String("route", path.Path))
 		}
 		server.RegisterMiddleWare()
 		go runServer(server)

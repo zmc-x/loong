@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"loong/pkg/global"
+	"loong/pkg/object/pipeline"
 	"net"
 	"net/http"
 	"time"
 
 	"github.com/gorilla/mux"
+	"go.uber.org/zap"
 )
 
 type Server struct {
@@ -24,14 +26,17 @@ func NewServer(rawCfg any) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	if surMap[spec.Name] {
-		return nil, fmt.Errorf("the trafficGate of name %s already exists", spec.Name)
-	}
-	surMap[spec.Name] = true
 	err = global.GlobalValidator.Struct(spec)
 	if err != nil {
 		return nil, err
 	}
+	if spec.Disable {
+		return nil, nil
+	}
+	if surMap[spec.Name] {
+		return nil, fmt.Errorf("the trafficGate of name %s already exists", spec.Name)
+	}
+	surMap[spec.Name] = true
 	server := &Server{
 		server: &http.Server{
 			Addr:         fmt.Sprintf(":%d", spec.Port),
@@ -48,7 +53,10 @@ func NewServer(rawCfg any) (*Server, error) {
 }
 
 func (s *Server) RegisterHandler(path string, handler http.Handler) {
-	s.server.Handler.(*mux.Router).Handle(path, handler)
+	if handler.(*pipeline.Spec) != nil {
+		s.server.Handler.(*mux.Router).Handle(path, handler)
+		global.GlobalZapLog.Info("the route is registered with " + s.GetName(), zap.String("route", path))
+	}
 }
 
 func (s *Server) RegisterMiddleWare() {

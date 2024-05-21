@@ -22,6 +22,7 @@ var (
 
 type Spec struct {
 	supervisor.Meta `json:",inline"`
+	Disable bool `json:"disable" validate:"boolean"`
 
 	// Flow represents the process of processing
 	Flow []filterNode `json:"flow"`
@@ -46,7 +47,11 @@ func (s *Spec) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		flow := s.Flow[i]
 		filterInstance := filters[s.Name+":"+flow.Filter]
 		var res string
-		res, statusCode = filterInstance.Handle(w, r)
+		res, tStatusCode := filterInstance.Handle(w, r)
+		if statusCode != -1 {
+			statusCode = tStatusCode
+		}
+		t := i
 		if flow.JumpIf != nil {
 			if v, ok := flow.JumpIf[res]; ok {
 				if v == PipelineEND {
@@ -60,6 +65,9 @@ func (s *Spec) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					}
 				}
 			}
+		}
+		if t == i && res == "ratelimited" {
+			break
 		}
 	}
 	// Not through proxy
@@ -85,6 +93,9 @@ func InitPipeline(cfg any) (*Spec, error) {
 	}
 	if err := global.GlobalValidator.Struct(spec); err != nil {
 		return nil, err
+	}
+	if spec.Disable {
+		return nil, nil
 	}
 	// Check whether there are configurations with duplicate names
 	if PipelineMap[spec.Name] != nil {

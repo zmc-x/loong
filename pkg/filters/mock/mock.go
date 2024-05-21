@@ -2,14 +2,14 @@ package mock
 
 import (
 	"loong/pkg/filters"
+	"loong/pkg/utils/stringtools"
 	"net/http"
-	"regexp"
 	"strings"
 	"time"
 )
 
 const (
-	Kind = "Mock"
+	Kind   = "Mock"
 	result = "mocked"
 )
 
@@ -42,7 +42,7 @@ type Rule struct {
 	Match MatchRule `json:",inline"`
 	// response header info
 	Header map[string]string `json:"header,omitempty"`
-	Code int `json:"code" validate:"gte=100,lt=600"`
+	Code   int               `json:"code" validate:"gte=100,lt=600"`
 	// response data
 	Body string `json:"body,omitempty"`
 	// process duration
@@ -52,43 +52,10 @@ type Rule struct {
 }
 
 type MatchRule struct {
-	Path           string                  `json:"path,omitempty" validate:"uri"`
-	PathPrefix     string                  `json:"pathPrefix,omitempty" validate:"uri"`
-	Headers        map[string]*HeaderMatch `json:"headers,omitempty"`
-	MatchAllHeader bool                    `json:"matchAllHeaders,omitempty" validate:"boolean"`
-}
-
-type HeaderMatch struct {
-	Exact  string `json:"exact,omitempty"`
-	Prefix string `json:"prefix,omitempty"`
-	Regexp string `json:"regexp,omitempty"`
-	Empty  bool   `json:"empty,omitempty" validate:"boolean"`
-	re     *regexp.Regexp
-}
-
-func (h *HeaderMatch) Init() {
-	if h.Regexp != "" {
-		h.re = regexp.MustCompile(h.Regexp)
-	}
-}
-
-func (h *HeaderMatch) Match(value string) bool {
-	if h.Empty && value == "" {
-		return true
-	}
-
-	if h.Exact != "" && h.Exact == value {
-		return true 
-	}
-
-	if h.Prefix != "" && strings.HasPrefix(value, h.Prefix) {
-		return true 
-	}
-	
-	if h.re == nil {
-		return false 
-	}
-	return h.re.MatchString(value)
+	Path           string                          `json:"path,omitempty" validate:"uri"`
+	PathPrefix     string                          `json:"pathPrefix,omitempty" validate:"uri"`
+	Headers        map[string]*stringtools.Matcher `json:"headers,omitempty"`
+	MatchAllHeader bool                            `json:"matchAllHeaders,omitempty" validate:"boolean"`
 }
 
 type Mock struct {
@@ -98,11 +65,11 @@ type Mock struct {
 func (m *Mock) Init() error {
 	for _, rule := range m.spec.Rules {
 		if rule.Delay == "" {
-			continue 
+			continue
 		}
 		delay, err := time.ParseDuration(rule.Delay)
 		if err != nil {
-			return err 
+			return err
 		}
 		rule.delay = delay
 	}
@@ -113,7 +80,7 @@ func (m *Mock) Handle(w http.ResponseWriter, r *http.Request) (string, int) {
 	if idx, ok := m.Match(r); ok {
 		rule := m.spec.Rules[idx]
 		wait := time.After(rule.delay)
-		<- wait
+		<-wait
 		// imitate backend process
 		for k, v := range rule.Header {
 			w.Header().Set(k, v)
@@ -131,7 +98,7 @@ func (m *Mock) Match(r *http.Request) (int, bool) {
 	// determine whether the request meets the requirment
 	matchPath := func(rule *Rule) bool {
 		if rule.Match.Path == "" && rule.Match.PathPrefix == "" {
-			return true 
+			return true
 		}
 		u := r.URL
 		if rule.Match.Path == u.Path {
@@ -139,7 +106,7 @@ func (m *Mock) Match(r *http.Request) (int, bool) {
 		}
 
 		if rule.Match.PathPrefix == "" {
-			return false 
+			return false
 		}
 		return strings.HasPrefix(u.Path, rule.Match.PathPrefix)
 	}
@@ -150,7 +117,7 @@ func (m *Mock) Match(r *http.Request) (int, bool) {
 		for _, str := range r.Header[key] {
 			res := m.Match(str)
 			if res {
-				return true 
+				return true
 			}
 		}
 		return false
@@ -158,9 +125,9 @@ func (m *Mock) Match(r *http.Request) (int, bool) {
 
 	matchAllHeader := func(rule *Rule) bool {
 		for k := range rule.Match.Headers {
-			res := matchHeader(k, rule) 
+			res := matchHeader(k, rule)
 			if res && !rule.Match.MatchAllHeader {
-				return true 
+				return true
 			} else if rule.Match.MatchAllHeader && !res {
 				return false
 			}

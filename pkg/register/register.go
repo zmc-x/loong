@@ -5,4 +5,5 @@ import (
 	_ "loong/pkg/filters/proxy"
 	_ "loong/pkg/filters/validator"
 	_ "loong/pkg/filters/mock"
+	_ "loong/pkg/filters/ratelimit"
 )

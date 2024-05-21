@@ -1,42 +1,50 @@
 package main
 
 import (
-	"fmt"
-	"net/http"
-
-	"github.com/gorilla/mux"
+    "fmt"
+    "net/http"
+    "github.com/gorilla/mux"
 )
 
-func main() {
-	// Create a new mux router
-	r := mux.NewRouter()
-
-	// Define routes
-	r.HandleFunc("/route1", routeHandler("Route 1")).Methods("GET")
-	r.HandleFunc("/route2", routeHandler("Route 2")).Methods("GET")
-	r.HandleFunc("/route3", routeHandler("Route 3")).Methods("GET")
-
-	// Run multiple servers concurrently on different ports
-	go func() {
-		fmt.Println("Server running on port 9095...")
-		http.ListenAndServe(":9095", r)
-	}()
-	go func() {
-		fmt.Println("Server running on port 9096...")
-		http.ListenAndServe(":9096", r)
-	}()
-	go func() {
-		fmt.Println("Server running on port 9097...")
-		http.ListenAndServe(":9097", r)
-	}()
-
-	// Keep the main goroutine running
-	select {}
+func pingHandler(port string) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        fmt.Fprintf(w, "pong from port %s", port)
+    }
 }
 
-// Handler function for all routes
-func routeHandler(message string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Message from %s", message)
-	}
+func searchHandler(port string) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        fmt.Fprintf(w, "search endpoint from port %s", port)
+    }
+}
+
+func startServer(addr string, handler http.Handler) {
+    fmt.Printf("Starting server on %s\n", addr)
+    if err := http.ListenAndServe(addr, handler); err != nil {
+        fmt.Printf("Error starting server on %s: %v\n", addr, err)
+    }
+}
+
+func main() {
+    // Create routers with handlers that include port information
+    pingRouter1 := mux.NewRouter()
+    pingRouter1.HandleFunc("/ping", pingHandler("9095")).Methods("GET")
+
+    pingRouter2 := mux.NewRouter()
+    pingRouter2.HandleFunc("/ping", pingHandler("9096")).Methods("GET")
+
+    searchRouter1 := mux.NewRouter()
+    searchRouter1.HandleFunc("/search", searchHandler("9097")).Methods("GET")
+
+    searchRouter2 := mux.NewRouter()
+    searchRouter2.HandleFunc("/search", searchHandler("9098")).Methods("GET")
+
+    // Start servers
+    go startServer(":9095", pingRouter1)
+    go startServer(":9096", pingRouter2)
+    go startServer(":9097", searchRouter1)
+    go startServer(":9098", searchRouter2)
+
+    // Prevent main from exiting
+    select {}
 }
