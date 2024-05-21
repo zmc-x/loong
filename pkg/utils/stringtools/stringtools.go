@@ -21,6 +21,10 @@ func (h *Matcher) Init() {
 }
 
 func (h *Matcher) Match(value string) bool {
+	if !h.Empty && h.Exact == "" && h.Prefix == "" && h.Regexp == "" {
+		return true
+	}
+
 	if h.Empty && value == "" {
 		return true
 	}

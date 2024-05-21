@@ -96,12 +96,16 @@ func (r *RateLimiter) Handle(w http.ResponseWriter, req *http.Request) (string, 
 		// match methods
 		if url.PolicyRef == "" && r.spec.DefaultPolicy == "" {continue}
 		vis := false
+		if len(url.Methods) == 0 {
+			vis = true
+		}
 		for _, method := range url.Methods {
 			if method == reqMethod {
 				vis = true
 			}
 		}
-
+		url.Url.Init()
+		vis = vis && url.Url.Match(req.URL.Path)
 		if vis {
 			policy := r.policyMap[url.PolicyRef]
 			if policy == nil {

@@ -6,15 +6,9 @@ import (
     "github.com/gorilla/mux"
 )
 
-func pingHandler(port string) http.HandlerFunc {
+func Handler(path, port string) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
-        fmt.Fprintf(w, "pong from port %s", port)
-    }
-}
-
-func searchHandler(port string) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        fmt.Fprintf(w, "search endpoint from port %s", port)
+        fmt.Fprintf(w, "request %s from port %s, methods is %s", path, port, r.Method)
     }
 }
 
@@ -28,23 +22,21 @@ func startServer(addr string, handler http.Handler) {
 func main() {
     // Create routers with handlers that include port information
     pingRouter1 := mux.NewRouter()
-    pingRouter1.HandleFunc("/ping", pingHandler("9095")).Methods("GET")
-
+    pingRouter1.HandleFunc("/ping", Handler("/ping", "9095"))
     pingRouter2 := mux.NewRouter()
-    pingRouter2.HandleFunc("/ping", pingHandler("9096")).Methods("GET")
+    pingRouter2.HandleFunc("/ping", Handler("/ping", "9098"))
+
+    pongRouter2 := mux.NewRouter()
+    pongRouter2.HandleFunc("/pong", Handler("/pong", "9096"))
 
     searchRouter1 := mux.NewRouter()
-    searchRouter1.HandleFunc("/search", searchHandler("9097")).Methods("GET")
-
-    searchRouter2 := mux.NewRouter()
-    searchRouter2.HandleFunc("/search", searchHandler("9098")).Methods("GET")
+    searchRouter1.HandleFunc("/search", Handler("/search", "9097"))
 
     // Start servers
     go startServer(":9095", pingRouter1)
-    go startServer(":9096", pingRouter2)
+    go startServer(":9096", pongRouter2)
     go startServer(":9097", searchRouter1)
-    go startServer(":9098", searchRouter2)
-
+    go startServer(":9098", pingRouter2)
     // Prevent main from exiting
     select {}
 }
