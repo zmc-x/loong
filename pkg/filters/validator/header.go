@@ -48,16 +48,20 @@ func (v *HeaderValidtator) Validate(r *http.Request) error {
 			return fmt.Errorf("header %s is invalid", key)
 		} else {
 			// match
+			vis := false
 			for _, v := range vv.Values {
-				survive := false
 				for _, reqHeaderValue := range values {
 					if v == reqHeaderValue || (vv.re != nil && vv.re.MatchString(reqHeaderValue)) {
-						survive = true
+						vis = true
+						break
 					}
 				}
-				if !survive {
-					return fmt.Errorf("header %s is invalid", key)
+				if vis {
+					break
 				}
+			}
+			if !vis {
+				return fmt.Errorf("header %s is invalid", key)
 			}
 		}
 	}
