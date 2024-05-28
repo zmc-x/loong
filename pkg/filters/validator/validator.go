@@ -42,16 +42,20 @@ type Validator struct {
 }
 
 func (v *Validator) Init() error {
-    headers, err := NewHeaderValidator(v.spec.Headers)
-	if err != nil {
-		return err
+	if v.spec.Headers != nil {
+		headers, err := NewHeaderValidator(v.spec.Headers)
+		if err != nil {
+			return err
+		}
+		v.headers = headers
 	}
-	jwt, err := NewJWTValidator(v.spec.JWT)
-	if err != nil {
-		return err
+	if v.spec.JWT != nil {
+		jwt, err := NewJWTValidator(v.spec.JWT)
+		if err != nil {
+			return err
+		}
+		v.jwt = jwt
 	}
-	v.headers = headers
-	v.jwt = jwt
 	return nil
 }
 
@@ -68,6 +72,5 @@ func (v *Validator) Handle(w http.ResponseWriter, r *http.Request) (string, int)
 	}
 	return "", http.StatusOK
 }
-
 
 func (v *Validator) Close() {}

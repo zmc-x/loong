@@ -113,14 +113,14 @@ func (h *HTTPProxy) newHTTPProxy() error {
 	h.lb = lb
 	h.hostMap = hostMap
 	h.done = make(chan struct{})
-	interval, err := time.ParseDuration(h.spec.HealthCheckInterval)
-	if err != nil {
-		return err
-	}
-	// start healthCheck process
-	if interval == 0 {
+	
+	if h.spec.HealthCheckInterval == "" {
 		h.interval = DefaultInterval
 	} else {
+		interval, err := time.ParseDuration(h.spec.HealthCheckInterval)
+		if err != nil {
+			return err
+		}
 		h.interval = interval
 	}
 	h.HealthCheck()
